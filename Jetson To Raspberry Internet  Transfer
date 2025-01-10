@@ -1,0 +1,106 @@
+# Setting Up Internet Access on Raspberry Pi via Jetson
+
+This guide explains the steps to share the Jetson's internet connection (via `usb1`) with the Raspberry Pi (`192.168.123.161`) connected over `eth0`.
+
+## 1. Enable Internet on Jetson
+1. Confirm the Jetson's internet access:
+   ```bash
+   ping 8.8.8.8
+   ping google.com
+   ```
+   - Ensure the Jetson is connected to the internet via `usb1` (`192.168.183.245`).
+
+## 2. Enable IP Forwarding on the Jetson
+1. Temporarily enable IP forwarding:
+   ```bash
+   sudo sysctl -w net.ipv4.ip_forward=1
+   ```
+
+2. Make it permanent by editing `/etc/sysctl.conf`:
+   ```bash
+   sudo nano /etc/sysctl.conf
+   ```
+   Add or uncomment:
+   ```
+   net.ipv4.ip_forward=1
+   ```
+   Apply changes:
+   ```bash
+   sudo sysctl -p
+   ```
+
+## 3. Configure NAT on the Jetson
+1. Add NAT rules to forward traffic from `eth0` to `usb1`:
+   ```bash
+   sudo iptables -t nat -A POSTROUTING -o usb1 -j MASQUERADE
+   sudo iptables -A FORWARD -i usb1 -o eth0 -m state --state RELATED,ESTABLISHED -j ACCEPT
+   sudo iptables -A FORWARD -i eth0 -o usb1 -j ACCEPT
+   ```
+
+2. Save the `iptables` rules:
+   ```bash
+   sudo sh -c 'iptables-save > /etc/iptables/rules.v4'
+   ```
+   Install `iptables-persistent` to retain rules after reboot:
+   ```bash
+   sudo apt-get install iptables-persistent
+   ```
+
+## 4. Configure the Raspberry Pi
+1. Set the Jetson (`192.168.123.12`) as the default gateway:
+   ```bash
+   sudo route add default gw 192.168.123.12
+   ```
+
+2. Configure DNS:
+   Edit `/etc/resolv.conf`:
+   ```bash
+   sudo nano /etc/resolv.conf
+   ```
+   Add:
+   ```
+   nameserver 8.8.8.8
+   ```
+
+3. Test internet connectivity:
+   ```bash
+   ping 8.8.8.8
+   ping google.com
+   ```
+
+## 5. Persist Raspberry Pi Configuration
+To ensure the settings persist after a reboot:
+
+1. Edit `/etc/dhcpcd.conf`:
+   ```bash
+   sudo nano /etc/dhcpcd.conf
+   ```
+   Add:
+   ```
+   interface enp1s0
+   static ip_address=192.168.123.161/24
+   static routers=192.168.123.12
+   static domain_name_servers=8.8.8.8
+   ```
+
+2. Restart networking:
+   ```bash
+   sudo systemctl restart networking
+   ```
+
+## Final Verification
+1. From the Raspberry Pi, test internet access:
+   ```bash
+   ping 8.8.8.8
+   ping google.com
+   ```
+
+2. Confirm bidirectional communication between the Raspberry Pi and Jetson:
+   - Ping the Raspberry Pi from the Jetson:
+     ```bash
+     ping 192.168.123.161
+     ```
+   - Ping the Jetson from the Raspberry Pi:
+     ```bash
+     ping 192.168.123.12
+     
