@@ -2,7 +2,7 @@
 
 Check Wiki for more info
 
-Major issuses detected:
+Major issuses detected in the following files after directly cloning them from unitree repo:
 
 ```
 /home/unitree/nikhil_ws/src/unitree_ros/unitree_ros_to_real/unitree_legged_real/CMakeLists.txt
@@ -14,3 +14,9 @@ This CMakeLists.txt was modified to manually integrate the Unitree Legged SDK be
 ```
 In this header file, we need to replace this file with the latest version of the comm.h file as few struct types are not defined in v3.3.4 and v 3.2 which are recommended for A1 robot (unitree_ros_to_real)
 
+
+Packages are getting build except for two nodes are not getting compiled (twist_sub and ros_udp), i have commented them out for now. Thez are located in 
+
+```
+/home/unitree/nikhil_ws/src/unitree_ros/unitree_ros_to_real/unitree_legged_real/CMakeLists.txt
+```
